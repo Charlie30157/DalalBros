@@ -18,6 +18,7 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_stock_tab(), "Stock")
         self.tabs.addTab(self.make_portfolio_tab(), "Portfolio")
         self.tabs.addTab(self.make_investor_tab(), "Investor")
+        self.tabs.addTab(self.make_tradeorder_tab(), "TradeOrder")
 
 
         
@@ -762,15 +763,161 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not delete investor:\n{e}")
 
+    #TradeOrder Tab
+    def make_tradeorder_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        self.tradeorder_table = QTableWidget()
+        layout.addWidget(self.tradeorder_table)
+
+        add_btn = QPushButton("Add TradeOrder")
+        add_btn.clicked.connect(self.add_tradeorder)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete TradeOrder")
+        delete_btn.clicked.connect(self.delete_tradeorder)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update TradeOrder")
+        update_btn.clicked.connect(self.update_tradeorder)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_tradeorder_table()
+        return widget
+
+    
+    def load_tradeorder_table(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM TradeOrder;")
+            rows = cursor.fetchall()
+            self.tradeorder_table.setRowCount(0)
+            self.tradeorder_table.setColumnCount(5)
+            self.tradeorder_table.setHorizontalHeaderLabels(
+                ['Order_id', 'Order_type', 'Quantity', 'S_id', 'P_id']
+            )
+            for r, row in enumerate(rows):
+                self.tradeorder_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.tradeorder_table.setItem(r, c, QTableWidgetItem(str(value) if value is not None else ''))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not load trade order data:\n{e}")
+
+    def add_tradeorder(self):
+        Order_id, ok = QInputDialog.getInt(self, "New TradeOrder", "Enter Order ID:")
+        if not ok:
+            return
+        Order_type, ok = QInputDialog.getText(self, "New TradeOrder", "Enter Order Type:")
+        if not ok or not Order_type:
+            return
+        Quantity, ok = QInputDialog.getInt(self, "New TradeOrder", "Enter Quantity:")
+        if not ok:
+            return
+        S_id, ok = QInputDialog.getInt(self, "New TradeOrder", "Enter Stock ID (S_id):")
+        if not ok:
+            return
+        P_id, ok = QInputDialog.getInt(self, "New TradeOrder", "Enter Portfolio ID (P_id):")
+        if not ok:
+            return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO TradeOrder (Order_id, Order_type, Quantity, S_id, P_id) VALUES (%s, %s, %s, %s, %s);",
+                (Order_id, Order_type, Quantity, S_id, P_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "TradeOrder added!")
+            self.load_tradeorder_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add trade order:\n{e}")
+
+    def update_tradeorder(self):
+        Order_id, ok = QInputDialog.getInt(self, "Update TradeOrder", "Enter Order ID to update:")
+        if not ok:
+            return
+        Order_type, ok = QInputDialog.getText(self, "Update TradeOrder", "Enter new Order Type:")
+        if not ok or not Order_type:
+            return
+        Quantity, ok = QInputDialog.getInt(self, "Update TradeOrder", "Enter new Quantity:")
+        if not ok:
+            return
+        S_id, ok = QInputDialog.getInt(self, "Update TradeOrder", "Enter new Stock ID (S_id):")
+        if not ok:
+            return
+        P_id, ok = QInputDialog.getInt(self, "Update TradeOrder", "Enter new Portfolio ID (P_id):")
+        if not ok:
+            return
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE TradeOrder SET Order_type=%s, Quantity=%s, S_id=%s, P_id=%s WHERE Order_id=%s;",
+                (Order_type, Quantity, S_id, P_id, Order_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"TradeOrder {Order_id} updated!")
+            self.load_tradeorder_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update trade order:\n{e}")
+
+    def delete_tradeorder(self):
+        Order_id, ok = QInputDialog.getInt(self, "Delete TradeOrder", "Enter Order ID to delete:")
+        if not ok:
+            return
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete TradeOrder {Order_id}?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM TradeOrder WHERE Order_id=%s;", (Order_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"TradeOrder {Order_id} deleted!")
+            self.load_tradeorder_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete trade order:\n{e}")
 
 
 
+        
 
-
-
-
-
-
+    
 
 # App launch
 app = QApplication(sys.argv)
