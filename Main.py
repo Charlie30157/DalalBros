@@ -175,16 +175,20 @@ class DalalBrosApp(QMainWindow):
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Company;")
             rows = cursor.fetchall()
+            print("DEBUG: Rows fetched from DB:", rows)  # Add this line!
             self.company_table.setRowCount(0)
-            self.company_table.setColumnCount(4)  # Company_id, Name, Sector, Headquarters
+            self.company_table.setColumnCount(4)
             self.company_table.setHorizontalHeaderLabels(['Company_id', 'Name', 'Sector', 'Headquarters'])
             for r, row in enumerate(rows):
+                self.company_table.insertRow(r)
                 for c, value in enumerate(row):
                     self.company_table.setItem(r, c, QTableWidgetItem(str(value)))
             cursor.close()
             conn.close()
         except Exception as e:
+            print("DEBUG: Exception in load_company_table:", e)
             QMessageBox.critical(self, "Error", f"Could not load company data:\n{e}")
+
         
     def make_company_tab(self):
         widget = QWidget()
