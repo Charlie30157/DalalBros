@@ -16,6 +16,7 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_market_tab(), "Market")
         self.tabs.addTab(self.make_company_tab(), "Company")
         self.tabs.addTab(self.make_stock_tab(), "Stock")
+        self.tabs.addTab(self.make_portfolio_tab(), "Portfolio")
 
 
         
@@ -473,7 +474,147 @@ class DalalBrosApp(QMainWindow):
             self.load_stock_table()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not delete stock:\n{e}")
+
+    #Portfolio Tab
+    def make_portfolio_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        self.portfolio_table = QTableWidget()
+        layout.addWidget(self.portfolio_table)
+
+        add_btn = QPushButton("Add Portfolio")
+        add_btn.clicked.connect(self.add_portfolio)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete Portfolio")
+        delete_btn.clicked.connect(self.delete_portfolio)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update Portfolio")
+        update_btn.clicked.connect(self.update_portfolio)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_portfolio_table()
+        return widget
     
+    def load_portfolio_table(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Portfolio;")
+            rows = cursor.fetchall()
+            self.portfolio_table.setRowCount(0)
+            self.portfolio_table.setColumnCount(2)
+            self.portfolio_table.setHorizontalHeaderLabels(['P_id', 'PortfolioValue'])
+            for r, row in enumerate(rows):
+                self.portfolio_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.portfolio_table.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            print("DEBUG Exception in load_portfolio_table:", e)
+            QMessageBox.critical(self, "Error", f"Could not load portfolio data:\n{e}")
+
+    def add_portfolio(self):
+        p_id, ok = QInputDialog.getInt(self, "New Portfolio", "Enter Portfolio ID (P_id):")
+        if not ok:
+            return
+        value, ok = QInputDialog.getDouble(self, "New Portfolio", "Enter Portfolio Value:")
+        if not ok:
+            return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO Portfolio (P_id, PortfolioValue) VALUES (%s, %s);",
+                (p_id, value)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Portfolio added!")
+            self.load_portfolio_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add portfolio:\n{e}")
+
+    def update_portfolio(self):
+        p_id, ok = QInputDialog.getInt(self, "Update Portfolio", "Enter Portfolio ID (P_id) to update:")
+        if not ok:
+            return
+
+        value, ok = QInputDialog.getDouble(self, "Update Portfolio", "Enter new Portfolio Value:")
+        if not ok:
+            return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE Portfolio SET PortfolioValue=%s WHERE P_id=%s;",
+                (value, p_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Portfolio {p_id} updated!")
+            self.load_portfolio_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update portfolio:\n{e}")
+
+    def delete_portfolio(self):
+        p_id, ok = QInputDialog.getInt(self, "Delete Portfolio", "Enter Portfolio ID (P_id) to delete:")
+        if not ok:
+            return
+
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete Portfolio {p_id}?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM Portfolio WHERE P_id=%s;", (p_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Portfolio {p_id} deleted!")
+            self.load_portfolio_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete portfolio:\n{e}")
+
+
+
+
+
+
 
 
 # App launch
