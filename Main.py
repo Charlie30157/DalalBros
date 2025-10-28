@@ -17,6 +17,7 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_company_tab(), "Company")
         self.tabs.addTab(self.make_stock_tab(), "Stock")
         self.tabs.addTab(self.make_portfolio_tab(), "Portfolio")
+        self.tabs.addTab(self.make_investor_tab(), "Investor")
 
 
         
@@ -609,6 +610,160 @@ class DalalBrosApp(QMainWindow):
             self.load_portfolio_table()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not delete portfolio:\n{e}")
+
+
+    #Investor Tab
+    def make_investor_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        self.investor_table = QTableWidget()
+        layout.addWidget(self.investor_table)
+
+        add_btn = QPushButton("Add Investor")
+        add_btn.clicked.connect(self.add_investor)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete Investor")
+        delete_btn.clicked.connect(self.delete_investor)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update Investor")
+        update_btn.clicked.connect(self.update_investor)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_investor_table()
+        return widget
+    
+    def load_investor_table(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Investor;")
+            rows = cursor.fetchall()
+            self.investor_table.setRowCount(0)
+            self.investor_table.setColumnCount(5)
+            self.investor_table.setHorizontalHeaderLabels(
+                ['I_id', 'Email', 'Balance', 'T_id', 'Referrer_id']
+            )
+            for r, row in enumerate(rows):
+                self.investor_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.investor_table.setItem(r, c, QTableWidgetItem(str(value) if value is not None else ''))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not load investor data:\n{e}")
+
+    def add_investor(self):
+        I_id, ok = QInputDialog.getInt(self, "New Investor", "Enter Investor ID (I_id):")
+        if not ok:
+            return
+        email, ok = QInputDialog.getText(self, "New Investor", "Enter Email:")
+        if not ok or not email:
+            return
+        balance, ok = QInputDialog.getDouble(self, "New Investor", "Enter Balance (optional):")
+        if not ok:
+            balance = None
+        T_id, ok = QInputDialog.getInt(self, "New Investor", "Enter Trader ID (T_id, optional):")
+        if not ok:
+            T_id = None
+        Referrer_id, ok = QInputDialog.getInt(self, "New Investor", "Enter Referrer ID (optional):")
+        if not ok:
+            Referrer_id = None
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO Investor (I_id, Email, Balance, T_id, Referrer_id) VALUES (%s, %s, %s, %s, %s);",
+                (I_id, email, balance, T_id, Referrer_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Investor added!")
+            self.load_investor_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add investor:\n{e}")
+
+    def update_investor(self):
+        I_id, ok = QInputDialog.getInt(self, "Update Investor", "Enter Investor ID (I_id) to update:")
+        if not ok:
+            return
+        email, ok = QInputDialog.getText(self, "Update Investor", "Enter new Email:")
+        if not ok or not email:
+            return
+        balance, ok = QInputDialog.getDouble(self, "Update Investor", "Enter new Balance:")
+        if not ok:
+            balance = None
+        T_id, ok = QInputDialog.getInt(self, "Update Investor", "Enter new Trader ID (T_id, optional):")
+        if not ok:
+            T_id = None
+        Referrer_id, ok = QInputDialog.getInt(self, "Update Investor", "Enter new Referrer ID (optional):")
+        if not ok:
+            Referrer_id = None
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE Investor SET Email=%s, Balance=%s, T_id=%s, Referrer_id=%s WHERE I_id=%s;",
+                (email, balance, T_id, Referrer_id, I_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Investor {I_id} updated!")
+            self.load_investor_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update investor:\n{e}")
+
+    def delete_investor(self):
+        I_id, ok = QInputDialog.getInt(self, "Delete Investor", "Enter Investor ID (I_id) to delete:")
+        if not ok:
+            return
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete Investor {I_id}?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM Investor WHERE I_id=%s;", (I_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Investor {I_id} deleted!")
+            self.load_investor_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete investor:\n{e}")
+
+
+
 
 
 
