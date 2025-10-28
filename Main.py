@@ -15,8 +15,8 @@ class DalalBrosApp(QMainWindow):
         self.setCentralWidget(self.tabs)
         self.tabs.addTab(self.make_market_tab(), "Market")
         self.tabs.addTab(self.make_company_tab(), "Company")
-        # self.tabs.addTab(self.make_stock_tab(), "Stock")
-        # self.tabs.addTab(self.make_portfolio_tab(), "Portfolio")
+        self.tabs.addTab(self.make_stock_tab(), "Stock")
+
 
         
         # Repeat for Company, Stock, Portfolio, etc.
@@ -320,8 +320,160 @@ class DalalBrosApp(QMainWindow):
             QMessageBox.critical(self, "Error", f"Could not delete company:\n{e}")
 
 
+    #Stock Tab
+    def make_stock_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        self.stock_table = QTableWidget()
+        layout.addWidget(self.stock_table)
+
+        add_btn = QPushButton("Add Stock")
+        add_btn.clicked.connect(self.add_stock)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete Stock")
+        delete_btn.clicked.connect(self.delete_stock)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update Stock")
+        update_btn.clicked.connect(self.update_stock)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_stock_table()
+        return widget
+    
+    def load_stock_table(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Stock;")
+            rows = cursor.fetchall()
+            self.stock_table.setRowCount(0)
+            self.stock_table.setColumnCount(5)
+            self.stock_table.setHorizontalHeaderLabels(['stock_id', 'ListingPrice', 'CurrentPrice', 'C_id', 'Mid'])
+            for r, row in enumerate(rows):
+                self.stock_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.stock_table.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            print("DEBUG Exception in load_stock_table:", e)
+            QMessageBox.critical(self, "Error", f"Could not load stock data:\n{e}")
+    
+    def add_stock(self):
+        stock_id, ok = QInputDialog.getInt(self, "New Stock", "Enter Stock ID:")
+        if not ok:
+            return
+        listing_price, ok = QInputDialog.getDouble(self, "New Stock", "Enter Listing Price:")
+        if not ok:
+            return
+        current_price, ok = QInputDialog.getDouble(self, "New Stock", "Enter Current Price:")
+        if not ok:
+            return
+        c_id, ok = QInputDialog.getInt(self, "New Stock", "Enter Company ID (C_id):")
+        if not ok:
+            return
+        mid, ok = QInputDialog.getInt(self, "New Stock", "Enter Market ID (Mid):")
+        if not ok:
+            return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO Stock (stock_id, ListingPrice, CurrentPrice, C_id, Mid) VALUES (%s, %s, %s, %s, %s);",
+                (stock_id, listing_price, current_price, c_id, mid)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Stock added!")
+            self.load_stock_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add stock:\n{e}")
+
+    def update_stock(self):
+        stock_id, ok = QInputDialog.getInt(self, "Update Stock", "Enter Stock ID to update:")
+        if not ok:
+            return
+
+        listing_price, ok = QInputDialog.getDouble(self, "Update Stock", "Enter new Listing Price:")
+        if not ok:
+            return
+        current_price, ok = QInputDialog.getDouble(self, "Update Stock", "Enter new Current Price:")
+        if not ok:
+            return
+        c_id, ok = QInputDialog.getInt(self, "Update Stock", "Enter new Company ID (C_id):")
+        if not ok:
+            return
+        mid, ok = QInputDialog.getInt(self, "Update Stock", "Enter new Market ID (Mid):")
+        if not ok:
+            return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE Stock SET ListingPrice=%s, CurrentPrice=%s, C_id=%s, Mid=%s WHERE stock_id=%s;",
+                (listing_price, current_price, c_id, mid, stock_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Stock ID {stock_id} updated!")
+            self.load_stock_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update stock:\n{e}")
 
 
+    def delete_stock(self):
+        stock_id, ok = QInputDialog.getInt(self, "Delete Stock", "Enter Stock ID to delete:")
+        if not ok:
+            return
+
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete Stock ID {stock_id}?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM Stock WHERE stock_id=%s;", (stock_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Stock ID {stock_id} deleted!")
+            self.load_stock_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete stock:\n{e}")
+    
 
 
 # App launch
