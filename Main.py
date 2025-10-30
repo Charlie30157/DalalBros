@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QPushButton, QMessageBox, QTableWidget, QTableWidgetItem, QInputDialog
 )
+from PyQt5.QtWidgets import QInputDialog, QMessageBox
 import sys
 import pymysql
 
@@ -19,6 +20,8 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_portfolio_tab(), "Portfolio")
         self.tabs.addTab(self.make_investor_tab(), "Investor")
         self.tabs.addTab(self.make_tradeorder_tab(), "TradeOrder")
+        self.tabs.addTab(self.make_broker_tab(), "Broker")
+
 
 
         
@@ -77,7 +80,7 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not add market:\n{e}")
 
-    from PyQt5.QtWidgets import QInputDialog, QMessageBox
+    
 
     def delete_market(self):
         # Ask the user to enter the Market ID to delete
@@ -915,7 +918,109 @@ class DalalBrosApp(QMainWindow):
 
 
 
-        
+    #Broker Tab
+
+    def make_broker_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        self.broker_table = QTableWidget()
+        layout.addWidget(self.broker_table)
+
+        add_btn = QPushButton("Add Broker")
+        add_btn.clicked.connect(self.add_broker)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete Broker")
+        delete_btn.clicked.connect(self.delete_broker)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update Broker")
+        update_btn.clicked.connect(self.update_broker)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_broker_table()
+        return widget
+    
+    def load_broker_table(self):
+        try:
+            conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Broker;")
+            rows = cursor.fetchall()
+            self.broker_table.setRowCount(0)
+            self.broker_table.setColumnCount(4)
+            self.broker_table.setHorizontalHeaderLabels(['Broker_id', 'License_no', 'Name', 'T_id'])
+            for r, row in enumerate(rows):
+                self.broker_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.broker_table.setItem(r, c, QTableWidgetItem(str(value) if value is not None else ''))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not load broker data:\n{e}")
+
+    def add_broker(self):
+        broker_id, ok = QInputDialog.getInt(self, "New Broker", "Enter Broker ID:")
+        if not ok: return
+        name, ok = QInputDialog.getText(self, "New Broker", "Enter Name:")
+        if not ok or not name: return
+        email, ok = QInputDialog.getText(self, "New Broker", "Enter Email:")
+        if not ok or not email: return
+        phone, ok = QInputDialog.getText(self, "New Broker", "Enter Phone:")
+        if not ok or not phone: return
+        try:
+            conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO Broker (Broker_id, Name, Email, Phone) VALUES (%s, %s, %s, %s);", (broker_id, name, email, phone))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Broker added!")
+            self.load_broker_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add broker:\n{e}")
+
+    def update_broker(self):
+        broker_id, ok = QInputDialog.getInt(self, "Update Broker", "Enter Broker ID to update:")
+        if not ok: return
+        name, ok = QInputDialog.getText(self, "Update Broker", "Enter new Name:")
+        if not ok or not name: return
+        email, ok = QInputDialog.getText(self, "Update Broker", "Enter new Email:")
+        if not ok or not email: return
+        phone, ok = QInputDialog.getText(self, "Update Broker", "Enter new Phone:")
+        if not ok or not phone: return
+        try:
+            conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("UPDATE Broker SET Name=%s, Email=%s, Phone=%s WHERE Broker_id=%s;", (name, email, phone, broker_id))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Broker {broker_id} updated!")
+            self.load_broker_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update broker:\n{e}")
+
+    def delete_broker(self):
+        broker_id, ok = QInputDialog.getInt(self, "Delete Broker", "Enter Broker ID to delete:")
+        if not ok: return
+        reply = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete Broker {broker_id}?", QMessageBox.Yes | QMessageBox.No)
+        if reply != QMessageBox.Yes: return
+        try:
+            conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM Broker WHERE Broker_id=%s;", (broker_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Broker {broker_id} deleted!")
+            self.load_broker_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete broker:\n{e}")
+
+
+
 
     
 
