@@ -22,7 +22,7 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_tradeorder_tab(), "TradeOrder")
         self.tabs.addTab(self.make_broker_tab(), "Broker")
         self.tabs.addTab(self.make_transaction_tab(), "Transaction")
-
+        self.tabs.addTab(self.make_phone_tab(), "Phone")
 
 
 
@@ -1241,6 +1241,138 @@ class DalalBrosApp(QMainWindow):
             self.load_transaction_table()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not delete transaction:\n{e}")
+
+    #Phone Tab
+
+    def make_phone_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        self.phone_table = QTableWidget()
+        layout.addWidget(self.phone_table)
+
+        add_btn = QPushButton("Add Phone")
+        add_btn.clicked.connect(self.add_phone)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete Phone")
+        delete_btn.clicked.connect(self.delete_phone)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update Phone")
+        update_btn.clicked.connect(self.update_phone)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_phone_table()
+        return widget
+
+    def load_phone_table(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Phone;")
+            rows = cursor.fetchall()
+            self.phone_table.setRowCount(0)
+            self.phone_table.setColumnCount(2)
+            self.phone_table.setHorizontalHeaderLabels(['Iid', 'Phone_number'])
+            for r, row in enumerate(rows):
+                self.phone_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.phone_table.setItem(r, c, QTableWidgetItem(str(value) if value is not None else ''))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not load phone data:\n{e}")
+
+
+    def add_phone(self):
+        iid, ok = QInputDialog.getInt(self, "New Phone", "Enter Iid:")
+        if not ok: return
+        phone_number, ok = QInputDialog.getText(self, "New Phone", "Enter Phone Number:")
+        if not ok or not phone_number: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO Phone (I_id, Phone_number) VALUES (%s, %s);",
+                (iid, phone_number)
+            )
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Phone added!")
+            self.load_phone_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add phone:\n{e}")
+
+
+    def update_phone(self):
+        iid, ok = QInputDialog.getInt(self, "Update Phone", "Enter Iid to update:")
+        if not ok: return
+        phone_number, ok = QInputDialog.getText(self, "Update Phone", "Enter new Phone Number:")
+        if not ok or not phone_number: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE Phone SET Phone_number=%s WHERE Iid=%s;",
+                (phone_number, iid)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Phone entry {iid} updated!")
+            self.load_phone_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update phone entry:\n{e}")
+
+    def delete_phone(self):
+        iid, ok = QInputDialog.getInt(self, "Delete Phone", "Enter Iid to delete:")
+        if not ok: return
+
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete Phone entry {iid}?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply != QMessageBox.Yes: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM Phone WHERE Iid=%s;", (iid,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Phone entry {iid} deleted!")
+            self.load_phone_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete phone entry:\n{e}")
+
+
 
 
     
