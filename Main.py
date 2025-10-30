@@ -21,6 +21,9 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_investor_tab(), "Investor")
         self.tabs.addTab(self.make_tradeorder_tab(), "TradeOrder")
         self.tabs.addTab(self.make_broker_tab(), "Broker")
+        self.tabs.addTab(self.make_transaction_tab(), "Transaction")
+
+
 
 
 
@@ -963,16 +966,21 @@ class DalalBrosApp(QMainWindow):
     def add_broker(self):
         broker_id, ok = QInputDialog.getInt(self, "New Broker", "Enter Broker ID:")
         if not ok: return
+        license_no, ok = QInputDialog.getText(self, "New Broker", "Enter License Number:")
+        if not ok or not license_no: return
         name, ok = QInputDialog.getText(self, "New Broker", "Enter Name:")
         if not ok or not name: return
-        email, ok = QInputDialog.getText(self, "New Broker", "Enter Email:")
-        if not ok or not email: return
-        phone, ok = QInputDialog.getText(self, "New Broker", "Enter Phone:")
-        if not ok or not phone: return
+        t_id, ok = QInputDialog.getInt(self, "New Broker", "Enter T_id (Trader ID, optional):")
+        if not ok:
+            t_id = None
+
         try:
             conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO Broker (Broker_id, Name, Email, Phone) VALUES (%s, %s, %s, %s);", (broker_id, name, email, phone))
+            cursor.execute(
+                "INSERT INTO Broker (Broker_id, License_no, Name, T_id) VALUES (%s, %s, %s, %s);",
+                (broker_id, license_no, name, t_id)
+            )
             conn.commit()
             cursor.close()
             conn.close()
@@ -981,19 +989,44 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not add broker:\n{e}")
 
+            broker_id, ok = QInputDialog.getInt(self, "New Broker", "Enter Broker ID:")
+            if not ok: return
+            name, ok = QInputDialog.getText(self, "New Broker", "Enter Name:")
+            if not ok or not name: return
+            email, ok = QInputDialog.getText(self, "New Broker", "Enter Email:")
+            if not ok or not email: return
+            phone, ok = QInputDialog.getText(self, "New Broker", "Enter Phone:")
+            if not ok or not phone: return
+            try:
+                conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+                cursor = conn.cursor()
+                cursor.execute("INSERT INTO Broker (Broker_id, Name, Email, Phone) VALUES (%s, %s, %s, %s);", (broker_id, name, email, phone))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                QMessageBox.information(self, "Success", "Broker added!")
+                self.load_broker_table()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not add broker:\n{e}")
+
     def update_broker(self):
         broker_id, ok = QInputDialog.getInt(self, "Update Broker", "Enter Broker ID to update:")
         if not ok: return
+        license_no, ok = QInputDialog.getText(self, "Update Broker", "Enter new License Number:")
+        if not ok or not license_no: return
         name, ok = QInputDialog.getText(self, "Update Broker", "Enter new Name:")
         if not ok or not name: return
-        email, ok = QInputDialog.getText(self, "Update Broker", "Enter new Email:")
-        if not ok or not email: return
-        phone, ok = QInputDialog.getText(self, "Update Broker", "Enter new Phone:")
-        if not ok or not phone: return
+        t_id, ok = QInputDialog.getInt(self, "Update Broker", "Enter new T_id (Trader ID, optional):")
+        if not ok:
+            t_id = None
+
         try:
             conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
             cursor = conn.cursor()
-            cursor.execute("UPDATE Broker SET Name=%s, Email=%s, Phone=%s WHERE Broker_id=%s;", (name, email, phone, broker_id))
+            cursor.execute(
+                "UPDATE Broker SET License_no=%s, Name=%s, T_id=%s WHERE Broker_id=%s;",
+                (license_no, name, t_id, broker_id)
+            )
             conn.commit()
             cursor.close()
             conn.close()
@@ -1002,11 +1035,33 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not update broker:\n{e}")
 
+            broker_id, ok = QInputDialog.getInt(self, "Update Broker", "Enter Broker ID to update:")
+            if not ok: return
+            name, ok = QInputDialog.getText(self, "Update Broker", "Enter new Name:")
+            if not ok or not name: return
+            email, ok = QInputDialog.getText(self, "Update Broker", "Enter new Email:")
+            if not ok or not email: return
+            phone, ok = QInputDialog.getText(self, "Update Broker", "Enter new Phone:")
+            if not ok or not phone: return
+            try:
+                conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+                cursor = conn.cursor()
+                cursor.execute("UPDATE Broker SET Name=%s, Email=%s, Phone=%s WHERE Broker_id=%s;", (name, email, phone, broker_id))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                QMessageBox.information(self, "Success", f"Broker {broker_id} updated!")
+                self.load_broker_table()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not update broker:\n{e}")
+
     def delete_broker(self):
         broker_id, ok = QInputDialog.getInt(self, "Delete Broker", "Enter Broker ID to delete:")
         if not ok: return
+
         reply = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete Broker {broker_id}?", QMessageBox.Yes | QMessageBox.No)
         if reply != QMessageBox.Yes: return
+
         try:
             conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
             cursor = conn.cursor()
@@ -1019,7 +1074,176 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not delete broker:\n{e}")
 
+            broker_id, ok = QInputDialog.getInt(self, "Delete Broker", "Enter Broker ID to delete:")
+            if not ok: return
+            reply = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete Broker {broker_id}?", QMessageBox.Yes | QMessageBox.No)
+            if reply != QMessageBox.Yes: return
+            try:
+                conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM Broker WHERE Broker_id=%s;", (broker_id,))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                QMessageBox.information(self, "Success", f"Broker {broker_id} deleted!")
+                self.load_broker_table()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not delete broker:\n{e}")
 
+    #Transaction Tab
+
+    def make_transaction_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        self.transaction_table = QTableWidget()
+        layout.addWidget(self.transaction_table)
+
+        add_btn = QPushButton("Add Transaction")
+        add_btn.clicked.connect(self.add_transaction)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete Transaction")
+        delete_btn.clicked.connect(self.delete_transaction)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update Transaction")
+        update_btn.clicked.connect(self.update_transaction)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_transaction_table()
+        return widget
+    
+    def load_transaction_table(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Transaction;")
+            rows = cursor.fetchall()
+            self.transaction_table.setRowCount(0)
+            self.transaction_table.setColumnCount(5)
+            self.transaction_table.setHorizontalHeaderLabels(['T_id', 'TradeType', 'Quantity', 'Price', 'Timestamp'])
+            for r, row in enumerate(rows):
+                self.transaction_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.transaction_table.setItem(r, c, QTableWidgetItem(str(value) if value is not None else ''))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not load transaction data:\n{e}")
+
+            try:
+                conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM Transaction;")
+                rows = cursor.fetchall()
+                self.transaction_table.setRowCount(0)
+                self.transaction_table.setColumnCount(5)
+                self.transaction_table.setHorizontalHeaderLabels(['T_id', 'TradeType', 'Quantity', 'Price', 'Timestamp'])
+                for r, row in enumerate(rows):
+                    self.transaction_table.insertRow(r)
+                    for c, value in enumerate(row):
+                        self.transaction_table.setItem(r, c, QTableWidgetItem(str(value) if value is not None else ''))
+                cursor.close()
+                conn.close()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not load transaction data:\n{e}")
+
+    def add_transaction(self):
+        T_id, ok = QInputDialog.getInt(self, "New Transaction", "Enter Transaction ID:")
+        if not ok: return
+        trade_type, ok = QInputDialog.getText(self, "New Transaction", "Enter Trade Type:")
+        if not ok or not trade_type: return
+        quantity, ok = QInputDialog.getInt(self, "New Transaction", "Enter Quantity:")
+        if not ok: return
+        price, ok = QInputDialog.getDouble(self, "New Transaction", "Enter Price:")
+        if not ok: return
+        timestamp, ok = QInputDialog.getText(self, "New Transaction", "Enter Timestamp (e.g., YYYY-MM-DD HH:MM:SS):")
+        if not ok or not timestamp: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO Transaction (T_id, TradeType, Quantity, Price, Timestamp) VALUES (%s, %s, %s, %s, %s);",
+                (T_id, trade_type, quantity, price, timestamp)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Transaction added!")
+            self.load_transaction_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add transaction:\n{e}")
+
+    def update_transaction(self):
+        T_id, ok = QInputDialog.getInt(self, "Update Transaction", "Enter Transaction ID to update:")
+        if not ok: return
+        trade_type, ok = QInputDialog.getText(self, "Update Transaction", "Enter new Trade Type:")
+        if not ok or not trade_type: return
+        quantity, ok = QInputDialog.getInt(self, "Update Transaction", "Enter new Quantity:")
+        if not ok: return
+        price, ok = QInputDialog.getDouble(self, "Update Transaction", "Enter new Price:")
+        if not ok: return
+        timestamp, ok = QInputDialog.getText(self, "Update Transaction", "Enter new Timestamp:")
+        if not ok or not timestamp: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE Transaction SET TradeType=%s, Quantity=%s, Price=%s, Timestamp=%s WHERE T_id=%s;",
+                (trade_type, quantity, price, timestamp, T_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Transaction {T_id} updated!")
+            self.load_transaction_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update transaction:\n{e}")
+
+    def delete_transaction(self):
+        T_id, ok = QInputDialog.getInt(self, "Delete Transaction", "Enter Transaction ID to delete:")
+        if not ok: return
+
+        reply = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete Transaction {T_id}?", QMessageBox.Yes | QMessageBox.No)
+        if reply != QMessageBox.Yes: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM Transaction WHERE T_id=%s;", (T_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", f"Transaction {T_id} deleted!")
+            self.load_transaction_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete transaction:\n{e}")
+
+
+    
 
 
     
