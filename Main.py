@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtWidgets import QLineEdit, QLabel, QPushButton, QVBoxLayout, QWidget
 from PyQt5.QtWidgets import QInputDialog, QMessageBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QTableWidget, QTableWidgetItem
 import sys
 import pymysql
 
@@ -26,7 +27,7 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_phone_tab(), "Phone")
         self.tabs.addTab(self.make_broker_investor_tab(), "Broker-Investor")
         self.tabs.addTab(self.make_function_tab(), "Function")
-
+        self.tabs.addTab(self.make_query_demo_tab(), "Query Demo")
 
 
 
@@ -1591,7 +1592,125 @@ class DalalBrosApp(QMainWindow):
             self.holdings_label.setText(f"Error (all): {e}")
 
 
+    #Query Demo Tab
+
     
+    def make_query_demo_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        # --- 1. Companies with stocks above average price ---
+        desc1 = QLabel("View all companies whose stocks have a current price above the average of all stocks.")
+        btn1 = QPushButton("Show Companies Above Average Stock Price")
+        btn1.clicked.connect(self.show_companies_above_avg)
+        self.table1 = QTableWidget()
+        self.table1.setColumnCount(2)
+        self.table1.setHorizontalHeaderLabels(['Name', 'Headquarters'])
+
+        layout.addWidget(desc1)
+        layout.addWidget(btn1)
+        layout.addWidget(self.table1)
+
+        # --- 2. Stock, Company Name, and Market Name ---
+        desc2 = QLabel("List every stock along with its company name, market name, and current price.")
+        btn2 = QPushButton("Show Stock-Company-Market Details")
+        btn2.clicked.connect(self.show_stock_company_market)
+        self.table2 = QTableWidget()
+        self.table2.setColumnCount(4)
+        self.table2.setHorizontalHeaderLabels(['Stock ID', 'Company Name', 'Market Name', 'Current Price'])
+
+        layout.addWidget(desc2)
+        layout.addWidget(btn2)
+        layout.addWidget(self.table2)
+
+        # --- 3. Portfolio total holdings and value ---
+        desc3 = QLabel("Show each portfolio’s total holdings and overall portfolio value.")
+        btn3 = QPushButton("Show Portfolio Holdings and Value")
+        btn3.clicked.connect(self.show_portfolio_holdings_value)
+        self.table3 = QTableWidget()
+        self.table3.setColumnCount(3)
+        self.table3.setHorizontalHeaderLabels(['Portfolio ID', 'Total Holdings', 'Portfolio Value'])
+
+        layout.addWidget(desc3)
+        layout.addWidget(btn3)
+        layout.addWidget(self.table3)
+
+        widget.setLayout(layout)
+        return widget
+
+    def show_companies_above_avg(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT Name, Headquarters
+                FROM Company
+                WHERE Company_id IN (
+                    SELECT C_id FROM Stock
+                    WHERE CurrentPrice > (SELECT AVG(CurrentPrice) FROM Stock)
+                );
+            """)
+            rows = cursor.fetchall()
+            self.table1.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.table1.insertRow(r)
+                for c, value in enumerate(row):
+                    self.table1.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.table1.setRowCount(1)
+            self.table1.setItem(0, 0, QTableWidgetItem("Error"))
+            self.table1.setItem(0, 1, QTableWidgetItem(str(e)))
+
+    def show_stock_company_market(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT s.stock_id, c.Name, m.name, s.CurrentPrice
+                FROM Stock s
+                JOIN Company c ON s.C_id = c.Company_id
+                JOIN Market m ON s.Mid = m.Mid;
+            """)
+            rows = cursor.fetchall()
+            self.table2.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.table2.insertRow(r)
+                for c, value in enumerate(row):
+                    self.table2.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.table2.setRowCount(1)
+            self.table2.setItem(0, 0, QTableWidgetItem("Error"))
+            self.table2.setItem(0, 1, QTableWidgetItem(str(e)))
+
+    def show_portfolio_holdings_value(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.P_id, SUM(c.Quantity) AS TotalHoldings, p.PortfolioValue
+                FROM Portfolio p
+                JOIN Contains c ON p.P_id = c.P_id
+                GROUP BY p.P_id, p.PortfolioValue;
+            """)
+            rows = cursor.fetchall()
+            self.table3.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.table3.insertRow(r)
+                for c, value in enumerate(row):
+                    self.table3.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.table3.setRowCount(1)
+            self.table3.setItem(0, 0, QTableWidgetItem("Error"))
+            self.table3.setItem(0, 1, QTableWidgetItem(str(e)))
 
 
 
