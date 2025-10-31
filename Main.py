@@ -1591,7 +1591,7 @@ class DalalBrosApp(QMainWindow):
             self.holdings_label.setText(f"Error (all): {e}")
 
 
-
+    
 
 
 
