@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QPushButton, QMessageBox, QTableWidget, QTableWidgetItem, QInputDialog
 )
+from PyQt5.QtWidgets import QLineEdit, QLabel, QPushButton, QVBoxLayout, QWidget
 from PyQt5.QtWidgets import QInputDialog, QMessageBox
 import sys
 import pymysql
@@ -24,6 +25,7 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_transaction_tab(), "Transaction")
         self.tabs.addTab(self.make_phone_tab(), "Phone")
         self.tabs.addTab(self.make_broker_investor_tab(), "Broker-Investor")
+        self.tabs.addTab(self.make_function_tab(), "Function")
 
 
 
@@ -1511,7 +1513,86 @@ class DalalBrosApp(QMainWindow):
             QMessageBox.critical(self, "Error", f"Could not delete relation:\n{e}")
 
 
+    #Function Tab
+
+
+    def make_function_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        self.pid_input = QLineEdit()
+        self.pid_input.setPlaceholderText("Enter Portfolio ID (P_id)")
+
+        calc_btn = QPushButton("Show Portfolio Holdings for P_id")
+        calc_btn.clicked.connect(self.show_portfolio_holdings)
+        
+        self.holdings_label = QLabel("Result will be shown here.")
+
+        # Table and button for all portfolios
+        show_all_btn = QPushButton("Show ALL Portfolio Holdings")
+        show_all_btn.clicked.connect(self.show_all_portfolio_holdings)
+        self.all_holdings_table = QTableWidget()
+        self.all_holdings_table.setColumnCount(2)
+        self.all_holdings_table.setHorizontalHeaderLabels(['P_id', 'TotalHoldings'])
+
+        layout.addWidget(self.pid_input)
+        layout.addWidget(calc_btn)
+        layout.addWidget(self.holdings_label)
+        layout.addWidget(show_all_btn)
+        layout.addWidget(self.all_holdings_table)
+
+        widget.setLayout(layout)
+        return widget
     
+    def show_portfolio_holdings(self):
+        try:
+            pid_text = self.pid_input.text()
+            if not pid_text.isdigit():
+                self.holdings_label.setText("Please enter a valid Portfolio ID!")
+                return
+            pid = int(pid_text)
+
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT PortfolioTotalHoldings(%s);", (pid,))
+            result = cursor.fetchone()
+            total = result[0] if result else 0
+            self.holdings_label.setText(f"P_id: {pid}   Total Holdings: {total}")
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.holdings_label.setText(f"Error: {e}")
+
+    def show_all_portfolio_holdings(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            # Query all P_id and their portfolio holdings using your SQL function
+            cursor.execute("SELECT P_id, PortfolioTotalHoldings(P_id) FROM Portfolio;")
+            rows = cursor.fetchall()
+            self.all_holdings_table.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.all_holdings_table.insertRow(r)
+                self.all_holdings_table.setItem(r, 0, QTableWidgetItem(str(row[0])))
+                self.all_holdings_table.setItem(r, 1, QTableWidgetItem(str(row[1])))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.holdings_label.setText(f"Error (all): {e}")
+
+
+
+
 
 
 
