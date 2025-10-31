@@ -23,6 +23,7 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_broker_tab(), "Broker")
         self.tabs.addTab(self.make_transaction_tab(), "Transaction")
         self.tabs.addTab(self.make_phone_tab(), "Phone")
+        self.tabs.addTab(self.make_broker_investor_tab(), "Broker-Investor")
 
 
 
@@ -1372,6 +1373,145 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not delete phone entry:\n{e}")
 
+    #RegisteredWith Tab
+
+    def make_broker_investor_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+        self.broker_investor_table = QTableWidget()
+        layout.addWidget(self.broker_investor_table)
+
+        add_btn = QPushButton("Add Relation")
+        add_btn.clicked.connect(self.add_broker_investor)
+        layout.addWidget(add_btn)
+
+        delete_btn = QPushButton("Delete Relation")
+        delete_btn.clicked.connect(self.delete_broker_investor)
+        layout.addWidget(delete_btn)
+
+        update_btn = QPushButton("Update Relation")
+        update_btn.clicked.connect(self.update_broker_investor)
+        layout.addWidget(update_btn)
+
+        widget.setLayout(layout)
+        self.load_broker_investor_table()
+        return widget
+
+    def load_broker_investor_table(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM RegisteredWith;")
+            rows = cursor.fetchall()
+            self.broker_investor_table.setRowCount(0)
+            self.broker_investor_table.setColumnCount(2)
+            self.broker_investor_table.setHorizontalHeaderLabels(['B_id', 'I_id'])
+            for r, row in enumerate(rows):
+                self.broker_investor_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.broker_investor_table.setItem(r, c, QTableWidgetItem(str(value) if value is not None else ''))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not load Broker-Investor data:\n{e}")
+
+    def add_broker_investor(self):
+        b_id, ok = QInputDialog.getInt(self, "New Relation", "Enter Broker ID (B_id):")
+        if not ok: return
+        i_id, ok = QInputDialog.getInt(self, "New Relation", "Enter Investor ID (I_id):")
+        if not ok: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO RegisteredWith (B_id, I_id) VALUES (%s, %s);",
+                (b_id, i_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Relation added!")
+            self.load_broker_investor_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not add relation:\n{e}")
+
+    def update_broker_investor(self):
+        b_id, ok = QInputDialog.getInt(self, "Update Relation", "Enter current Broker ID (B_id):")
+        if not ok: return
+        i_id, ok = QInputDialog.getInt(self, "Update Relation", "Enter current Investor ID (I_id):")
+        if not ok: return
+
+        new_b_id, ok = QInputDialog.getInt(self, "Update Relation", "Enter new Broker ID:")
+        if not ok: return
+        new_i_id, ok = QInputDialog.getInt(self, "Update Relation", "Enter new Investor ID:")
+        if not ok: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE RegisteredWith SET B_id=%s, I_id=%s WHERE B_id=%s AND I_id=%s;",
+                (new_b_id, new_i_id, b_id, i_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Relation updated!")
+            self.load_broker_investor_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not update relation:\n{e}")
+
+    def delete_broker_investor(self):
+        b_id, ok = QInputDialog.getInt(self, "Delete Relation", "Enter Broker ID (B_id):")
+        if not ok: return
+        i_id, ok = QInputDialog.getInt(self, "Delete Relation", "Enter Investor ID (I_id):")
+        if not ok: return
+
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete this Broker-Investor relation?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if reply != QMessageBox.Yes: return
+
+        try:
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='Harsh#2004',
+                database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM RegisteredWith WHERE B_id=%s AND I_id=%s;",
+                (b_id, i_id)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            QMessageBox.information(self, "Success", "Relation deleted!")
+            self.load_broker_investor_table()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not delete relation:\n{e}")
+
+
+    
 
 
 
