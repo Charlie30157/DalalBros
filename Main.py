@@ -28,6 +28,9 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_broker_investor_tab(), "Broker-Investor")
         self.tabs.addTab(self.make_function_tab(), "Function")
         self.tabs.addTab(self.make_query_demo_tab(), "Query Demo")
+        self.tabs.addTab(self.make_audit_portfolio_tab(), "Audit Portfolio")
+
+
 
 
 
@@ -86,9 +89,7 @@ class DalalBrosApp(QMainWindow):
             self.load_market_table()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not add market:\n{e}")
-
-    
-
+  
     def delete_market(self):
         # Ask the user to enter the Market ID to delete
         mid, ok = QInputDialog.getInt(self, "Delete Market", "Enter Market ID to delete:")
@@ -149,9 +150,6 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not update market:\n{e}")
 
-
-
-
     def load_market_table(self):
         try:
             conn = pymysql.connect(
@@ -201,8 +199,7 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             print("DEBUG: Exception in load_company_table:", e)
             QMessageBox.critical(self, "Error", f"Could not load company data:\n{e}")
-
-        
+   
     def make_company_tab(self):
         widget = QWidget()
         layout = QVBoxLayout()
@@ -455,7 +452,6 @@ class DalalBrosApp(QMainWindow):
             self.load_stock_table()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not update stock:\n{e}")
-
 
     def delete_stock(self):
         stock_id, ok = QInputDialog.getInt(self, "Delete Stock", "Enter Stock ID to delete:")
@@ -796,7 +792,6 @@ class DalalBrosApp(QMainWindow):
         self.load_tradeorder_table()
         return widget
 
-    
     def load_tradeorder_table(self):
         try:
             conn = pymysql.connect(
@@ -1293,7 +1288,6 @@ class DalalBrosApp(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not load phone data:\n{e}")
 
-
     def add_phone(self):
         iid, ok = QInputDialog.getInt(self, "New Phone", "Enter Iid:")
         if not ok: return
@@ -1320,7 +1314,6 @@ class DalalBrosApp(QMainWindow):
             self.load_phone_table()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not add phone:\n{e}")
-
 
     def update_phone(self):
         iid, ok = QInputDialog.getInt(self, "Update Phone", "Enter Iid to update:")
@@ -1515,7 +1508,6 @@ class DalalBrosApp(QMainWindow):
 
 
     #Function Tab
-
 
     def make_function_tab(self):
         widget = QWidget()
@@ -1713,6 +1705,48 @@ class DalalBrosApp(QMainWindow):
             self.table3.setItem(0, 1, QTableWidgetItem(str(e)))
 
 
+    #AuditPortfolio Tab for Trigger
+
+    def make_audit_portfolio_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        desc = QLabel("This table records every portfolio creation event via trigger ('PORTFOLIO_CREATED').\n"
+                    "Insert into Portfolio, and click refresh to see the audit record appear here.")
+        refresh_btn = QPushButton("Refresh Audit Table")
+        refresh_btn.clicked.connect(self.load_audit_portfolio)
+        self.audit_table = QTableWidget()
+        self.audit_table.setColumnCount(4)
+        self.audit_table.setHorizontalHeaderLabels(['AuditId', 'P_id', 'EventType', 'EventTime'])
+
+        layout.addWidget(desc)
+        layout.addWidget(refresh_btn)
+        layout.addWidget(self.audit_table)
+        widget.setLayout(layout)
+        return widget
+    
+    def load_audit_portfolio(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("SELECT AuditId, P_id, EventType, EventTime FROM AuditPortfolio ORDER BY AuditId DESC;")
+            rows = cursor.fetchall()
+            self.audit_table.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.audit_table.insertRow(r)
+                for c, value in enumerate(row):
+                    self.audit_table.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.audit_table.setRowCount(1)
+            self.audit_table.setItem(0, 0, QTableWidgetItem("Error"))
+            self.audit_table.setItem(0, 1, QTableWidgetItem(str(e)))
+
+
+    
+    
 
 
     
