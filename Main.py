@@ -29,6 +29,8 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_function_tab(), "Function")
         self.tabs.addTab(self.make_query_demo_tab(), "Query Demo")
         self.tabs.addTab(self.make_audit_portfolio_tab(), "Audit Portfolio")
+        self.tabs.addTab(self.make_joins_tab(), "Joins Demo")
+
 
 
 
@@ -1745,8 +1747,117 @@ class DalalBrosApp(QMainWindow):
             self.audit_table.setItem(0, 1, QTableWidgetItem(str(e)))
 
 
+    #Different Joins
+
+    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QTableWidget, QTableWidgetItem
+
+    def make_joins_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        # --- Inner Join ---
+        desc_inner = QLabel("INNER JOIN: Show each stock with its company name where listing exists in both tables.")
+        btn_inner = QPushButton("Execute INNER JOIN Query")
+        btn_inner.clicked.connect(self.show_inner_join)
+        self.table_inner = QTableWidget()
+        self.table_inner.setColumnCount(2)
+        self.table_inner.setHorizontalHeaderLabels(['Stock ID', 'Company Name'])
+        layout.addWidget(desc_inner)
+        layout.addWidget(btn_inner)
+        layout.addWidget(self.table_inner)
+
+        # --- Left Join ---
+        desc_left = QLabel("LEFT JOIN: Show all companies and their stock IDs, including companies without stocks.")
+        btn_left = QPushButton("Execute LEFT JOIN Query")
+        btn_left.clicked.connect(self.show_left_join)
+        self.table_left = QTableWidget()
+        self.table_left.setColumnCount(2)
+        self.table_left.setHorizontalHeaderLabels(['Company ID', 'Stock ID'])
+        layout.addWidget(desc_left)
+        layout.addWidget(btn_left)
+        layout.addWidget(self.table_left)
+
+        # --- Pseudo Right Join (Left Join with swapped tables) ---
+        desc_right = QLabel("""RIGHT JOIN (simulated): Show all stocks and their company IDs,
+        including stocks not assigned to a company (should be rare).""")
+        btn_right = QPushButton("Execute RIGHT JOIN Query")
+        btn_right.clicked.connect(self.show_right_join)
+        self.table_right = QTableWidget()
+        self.table_right.setColumnCount(2)
+        self.table_right.setHorizontalHeaderLabels(['Stock ID', 'Company ID'])
+        layout.addWidget(desc_right)
+        layout.addWidget(btn_right)
+        layout.addWidget(self.table_right)
+
+        widget.setLayout(layout)
+        return widget
     
-    
+    def show_inner_join(self):
+        try:
+            conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT s.stock_id, c.Name
+                FROM Stock s
+                INNER JOIN Company c ON s.C_id = c.Company_id;
+            """)
+            rows = cursor.fetchall()
+            self.table_inner.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.table_inner.insertRow(r)
+                for c, value in enumerate(row):
+                    self.table_inner.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.table_inner.setRowCount(1)
+            self.table_inner.setItem(0, 0, QTableWidgetItem("Error"))
+            self.table_inner.setItem(0, 1, QTableWidgetItem(str(e)))
+
+    def show_left_join(self):
+        try:
+            conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT c.Company_id, s.stock_id
+                FROM Company c
+                LEFT JOIN Stock s ON c.Company_id = s.C_id;
+            """)
+            rows = cursor.fetchall()
+            self.table_left.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.table_left.insertRow(r)
+                for c, value in enumerate(row):
+                    self.table_left.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.table_left.setRowCount(1)
+            self.table_left.setItem(0, 0, QTableWidgetItem("Error"))
+            self.table_left.setItem(0, 1, QTableWidgetItem(str(e)))
+
+    def show_right_join(self):
+        try:
+            conn = pymysql.connect(host='localhost', user='root', password='Harsh#2004', database='DalalBros')
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT s.stock_id, c.Company_id
+                FROM Stock s
+                LEFT JOIN Company c ON c.Company_id = s.C_id;
+            """)
+            rows = cursor.fetchall()
+            self.table_right.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.table_right.insertRow(r)
+                for c, value in enumerate(row):
+                    self.table_right.setItem(r, c, QTableWidgetItem(str(value)))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.table_right.setRowCount(1)
+            self.table_right.setItem(0, 0, QTableWidgetItem("Error"))
+            self.table_right.setItem(0, 1, QTableWidgetItem(str(e)))
+
 
 
     
