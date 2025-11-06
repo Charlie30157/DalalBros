@@ -30,6 +30,8 @@ class DalalBrosApp(QMainWindow):
         self.tabs.addTab(self.make_query_demo_tab(), "Query Demo")
         self.tabs.addTab(self.make_audit_portfolio_tab(), "Audit Portfolio")
         self.tabs.addTab(self.make_joins_tab(), "Joins Demo")
+        self.tabs.addTab(self.make_procedure_tab(), "Procedure")
+
 
 
 
@@ -1858,6 +1860,82 @@ class DalalBrosApp(QMainWindow):
             self.table_right.setItem(0, 0, QTableWidgetItem("Error"))
             self.table_right.setItem(0, 1, QTableWidgetItem(str(e)))
 
+    #Procedure Tab
+    from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit, QMessageBox
+
+    def make_procedure_tab(self):
+        widget = QWidget()
+        layout = QVBoxLayout()
+
+        desc = QLabel("Execute the stored procedure to increase all stock prices by a percentage.")
+        layout.addWidget(desc)
+
+        self.percent_input = QLineEdit()
+        self.percent_input.setPlaceholderText("Enter percent increase (e.g., 10 for 10%)")
+        layout.addWidget(self.percent_input)
+
+        run_btn = QPushButton("Run IncreaseAllStockPricesBy Procedure")
+        run_btn.clicked.connect(self.execute_procedure)
+        layout.addWidget(run_btn)
+
+        self.proc_result_label = QLabel("")
+        layout.addWidget(self.proc_result_label)
+
+        # New button to show current stock prices
+        show_prices_btn = QPushButton("Show Current Stock Prices")
+        show_prices_btn.clicked.connect(self.show_current_prices)
+        layout.addWidget(show_prices_btn)
+
+        # Table to display stock prices
+        self.stock_price_table = QTableWidget()
+        self.stock_price_table.setColumnCount(2)
+        self.stock_price_table.setHorizontalHeaderLabels(['Stock ID', 'Current Price'])
+        layout.addWidget(self.stock_price_table)
+
+        widget.setLayout(layout)
+        return widget
+
+    def execute_procedure(self):
+        try:
+            percent_text = self.percent_input.text()
+            if not percent_text.replace('.', '', 1).isdigit():
+                self.proc_result_label.setText("Error: Please enter a valid number for percentage")
+                return
+
+            percent = float(percent_text)
+
+            conn = pymysql.connect(
+                host='localhost', user='root', password='Harsh#2004', database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.callproc('IncreaseAllStockPricesBy', (percent,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            self.proc_result_label.setText(f"Procedure executed successfully - increased prices by {percent}%")
+        except Exception as e:
+            self.proc_result_label.setText(f"Error: {e}")
+
+    def show_current_prices(self):
+        try:
+            conn = pymysql.connect(
+                host='localhost', user='root', password='Harsh#2004', database='DalalBros'
+            )
+            cursor = conn.cursor()
+            cursor.execute("SELECT stock_id, CurrentPrice FROM Stock;")
+            rows = cursor.fetchall()
+            self.stock_price_table.setRowCount(0)
+            for r, row in enumerate(rows):
+                self.stock_price_table.insertRow(r)
+                self.stock_price_table.setItem(r, 0, QTableWidgetItem(str(row[0])))
+                self.stock_price_table.setItem(r, 1, QTableWidgetItem(str(row[1])))
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            self.stock_price_table.setRowCount(1)
+            self.stock_price_table.setItem(0, 0, QTableWidgetItem("Error"))
+            self.stock_price_table.setItem(0, 1, QTableWidgetItem(str(e)))
 
 
     
